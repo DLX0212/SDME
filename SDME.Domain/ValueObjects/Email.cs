@@ -3,9 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace SDME.Domain.ValueObjects
 {
-    /// <summary>
     /// Value Object para Email con validación
-    /// </summary>
     public class Email : ValueObject
     {
         public string Valor { get; private set; }

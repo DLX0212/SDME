@@ -2,9 +2,7 @@
 
 namespace SDME.Domain.ValueObjects
 {
-    /// <summary>
     /// Value Object para representar dinero con moneda
-    /// </summary>
     public class Dinero : ValueObject
     {
         public decimal Monto { get; private set; }

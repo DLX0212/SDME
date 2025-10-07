@@ -3,9 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace SDME.Domain.ValueObjects
 {
-    /// <summary>
+
     /// Value Object para Teléfono con validación (República Dominicana)
-    /// </summary>
+  
     public class Telefono : ValueObject
     {
         public string Valor { get; private set; }
