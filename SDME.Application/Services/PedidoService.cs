@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using SDME.Application.DTOs.Common;
+﻿using SDME.Application.DTOs.Common;
 using SDME.Application.DTOs.Pedido;
 using SDME.Application.Interfaces;
+using SDME.Application.Logging;
 using SDME.Domain.Entities.Core;
 using SDME.Domain.Enums;
 using SDME.Domain.Interfaces;
@@ -11,9 +11,11 @@ namespace SDME.Application.Services
     public class PedidoService : IPedidoService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<PedidoService> _logger;
+        private readonly IAppLogger<PedidoService> _logger;
 
-        public PedidoService(IUnitOfWork unitOfWork, ILogger<PedidoService> logger)
+        public PedidoService(
+            IUnitOfWork unitOfWork,
+            IAppLogger<PedidoService> logger)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
@@ -23,17 +25,43 @@ namespace SDME.Application.Services
         {
             try
             {
-                _logger.LogInformation("Creando pedido para usuario {UsuarioId}", dto.UsuarioId);
+                _logger.LogInformation($"Iniciando creación de pedido para usuario {dto.UsuarioId}");
 
-                // Iniciar transacción
-                await _unitOfWork.BeginTransactionAsync();
+                // ===== VALIDACIONES DE NEGOCIO (Requisitos SRS/SAD) =====
 
-                // Validación de negocio: verificar que el usuario existe
+                // 1. Validar que el usuario existe y está activo
                 var usuario = await _unitOfWork.Usuarios.GetByIdAsync(dto.UsuarioId);
                 if (usuario == null)
                 {
+                    _logger.LogWarning($"Usuario {dto.UsuarioId} no encontrado");
                     return ResponseDto<PedidoDto>.Failure("Usuario no encontrado");
                 }
+
+                if (!usuario.EstaActivo)
+                {
+                    return ResponseDto<PedidoDto>.Failure("El usuario no está activo");
+                }
+
+                // 2. Validar que el pedido no esté vacío (SRS 3.3)
+                if (dto.Detalles == null || !dto.Detalles.Any())
+                {
+                    return ResponseDto<PedidoDto>.Failure("El pedido debe contener al menos un producto");
+                }
+
+                // 3. Validar tipo de entrega válido
+                if (dto.TipoEntrega != "Domicilio" && dto.TipoEntrega != "Recoger")
+                {
+                    return ResponseDto<PedidoDto>.Failure("Tipo de entrega inválido. Use 'Domicilio' o 'Recoger'");
+                }
+
+                // 4. Si es domicilio, validar que tenga dirección
+                if (dto.TipoEntrega == "Domicilio" && !dto.DireccionEntregaId.HasValue)
+                {
+                    return ResponseDto<PedidoDto>.Failure("Debe especificar una dirección para entrega a domicilio");
+                }
+
+                // Iniciar transacción para consistencia de datos
+                await _unitOfWork.BeginTransactionAsync();
 
                 // Crear el pedido
                 var pedido = new Pedido
@@ -46,24 +74,58 @@ namespace SDME.Application.Services
                     CreadoPor = usuario.Email
                 };
 
-                // Validar y agregar los detalles del pedido
+                // 5. Validar y agregar cada producto del pedido
                 foreach (var detalleDto in dto.Detalles)
                 {
                     var producto = await _unitOfWork.Productos.GetByIdAsync(detalleDto.ProductoId);
 
+                    // Validar que el producto existe
                     if (producto == null)
                     {
                         await _unitOfWork.RollbackTransactionAsync();
-                        return ResponseDto<PedidoDto>.Failure($"Producto con ID {detalleDto.ProductoId} no encontrado");
+                        return ResponseDto<PedidoDto>.Failure(
+                            $"Producto con ID {detalleDto.ProductoId} no encontrado"
+                        );
                     }
 
-                    // Validación de negocio: verificar stock disponible
+                    // Validar que el producto está activo
+                    if (!producto.EstaActivo)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ResponseDto<PedidoDto>.Failure(
+                            $"El producto '{producto.Nombre}' no está disponible"
+                        );
+                    }
+
+                    // Validar que el producto está disponible
+                    if (!producto.Disponible)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ResponseDto<PedidoDto>.Failure(
+                            $"El producto '{producto.Nombre}' no está disponible temporalmente"
+                        );
+                    }
+
+                    // Validar cantidad positiva
+                    if (detalleDto.Cantidad <= 0)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ResponseDto<PedidoDto>.Failure(
+                            "La cantidad debe ser mayor a cero"
+                        );
+                    }
+
+                    // Validar stock disponible (Regla de negocio crítica)
                     if (!producto.TieneStock(detalleDto.Cantidad))
                     {
                         await _unitOfWork.RollbackTransactionAsync();
-                        return ResponseDto<PedidoDto>.Failure($"Stock insuficiente para {producto.Nombre}");
+                        return ResponseDto<PedidoDto>.Failure(
+                            $"Stock insuficiente para '{producto.Nombre}'. " +
+                            $"Disponible: {producto.Stock}, Solicitado: {detalleDto.Cantidad}"
+                        );
                     }
 
+                    // Crear detalle del pedido
                     var detalle = new DetallePedido
                     {
                         ProductoId = producto.Id,
@@ -75,19 +137,19 @@ namespace SDME.Application.Services
                     detalle.CalcularSubtotal();
                     pedido.AgregarDetalle(detalle);
 
-                    // Reducir el stock del producto
+                    // Reducir stock del producto
                     producto.ReducirStock(detalleDto.Cantidad);
                     await _unitOfWork.Productos.UpdateAsync(producto);
                 }
 
-                // Calcular totales del pedido
+                // 6. Calcular totales (incluye ITBIS 18% RD según SAD)
                 pedido.CalcularTotal();
 
-                // Guardar el pedido
+                // 7. Guardar el pedido
                 await _unitOfWork.Pedidos.AddAsync(pedido);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Generar número de pedido
+                // 8. Generar número de pedido único
                 pedido.GenerarNumeroPedido();
                 await _unitOfWork.Pedidos.UpdateAsync(pedido);
                 await _unitOfWork.SaveChangesAsync();
@@ -95,9 +157,9 @@ namespace SDME.Application.Services
                 // Confirmar transacción
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Pedido creado exitosamente: {NumeroPedido}", pedido.NumeroPedido);
+                _logger.LogInformation($"Pedido creado exitosamente: {pedido.NumeroPedido}");
 
-                // Obtener el pedido completo con sus relaciones
+                // Obtener pedido completo con relaciones
                 var pedidoCompleto = await _unitOfWork.Pedidos.GetConDetallesAsync(pedido.Id);
 
                 return ResponseDto<PedidoDto>.Success(
@@ -105,11 +167,61 @@ namespace SDME.Application.Services
                     "Pedido creado exitosamente"
                 );
             }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error de regla de negocio al crear pedido");
+                return ResponseDto<PedidoDto>.Failure(ex.Message);
+            }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Error al crear pedido");
-                return ResponseDto<PedidoDto>.Failure("Error al crear el pedido");
+                _logger.LogError(ex, "Error inesperado al crear pedido");
+                return ResponseDto<PedidoDto>.Failure(
+                    "Ocurrió un error al crear el pedido. Por favor intente nuevamente."
+                );
+            }
+        }
+
+        public async Task<ResponseDto<PedidoDto>> ActualizarEstadoAsync(
+            int id,
+            ActualizarEstadoPedidoDto dto)
+        {
+            try
+            {
+                // Validar que el pedido existe
+                var pedido = await _unitOfWork.Pedidos.GetConDetallesAsync(id);
+                if (pedido == null)
+                {
+                    return ResponseDto<PedidoDto>.Failure("Pedido no encontrado");
+                }
+
+                var nuevoEstado = ConvertirEstado(dto.NuevoEstado);
+
+                // Aplicar reglas de transición de estado (lógica de negocio)
+                try
+                {
+                    pedido.CambiarEstado(nuevoEstado);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return ResponseDto<PedidoDto>.Failure(ex.Message);
+                }
+
+                await _unitOfWork.Pedidos.UpdateAsync(pedido);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation($"Estado del pedido {id} cambiado a {dto.NuevoEstado}");
+
+                return ResponseDto<PedidoDto>.Success(
+                    ConvertirADto(pedido),
+                    "Estado actualizado exitosamente"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al actualizar estado del pedido {id}");
+                return ResponseDto<PedidoDto>.Failure("Error al actualizar el estado");
             }
         }
 
@@ -128,7 +240,7 @@ namespace SDME.Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener pedido {Id}", id);
+                _logger.LogError(ex, $"Error al obtener pedido {id}");
                 return ResponseDto<PedidoDto>.Failure("Error al obtener el pedido");
             }
         }
@@ -144,7 +256,7 @@ namespace SDME.Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener pedidos del usuario {UsuarioId}", usuarioId);
+                _logger.LogError(ex, $"Error al obtener pedidos del usuario {usuarioId}");
                 return ResponseDto<List<PedidoDto>>.Failure("Error al obtener los pedidos");
             }
         }
@@ -161,49 +273,8 @@ namespace SDME.Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener pedidos por estado {Estado}", estado);
+                _logger.LogError(ex, $"Error al obtener pedidos por estado {estado}");
                 return ResponseDto<List<PedidoDto>>.Failure("Error al obtener los pedidos");
-            }
-        }
-
-        public async Task<ResponseDto<PedidoDto>> ActualizarEstadoAsync(int id, ActualizarEstadoPedidoDto dto)
-        {
-            try
-            {
-                var pedido = await _unitOfWork.Pedidos.GetByIdAsync(id);
-
-                if (pedido == null)
-                {
-                    return ResponseDto<PedidoDto>.Failure("Pedido no encontrado");
-                }
-
-                var nuevoEstado = ConvertirEstado(dto.NuevoEstado);
-
-                // Validación de negocio: cambiar estado del pedido
-                try
-                {
-                    pedido.CambiarEstado(nuevoEstado);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    return ResponseDto<PedidoDto>.Failure(ex.Message);
-                }
-
-                await _unitOfWork.Pedidos.UpdateAsync(pedido);
-                await _unitOfWork.SaveChangesAsync();
-
-                _logger.LogInformation("Estado del pedido {Id} actualizado a {Estado}", id, dto.NuevoEstado);
-
-                var pedidoActualizado = await _unitOfWork.Pedidos.GetConDetallesAsync(id);
-                return ResponseDto<PedidoDto>.Success(
-                    ConvertirADto(pedidoActualizado!),
-                    "Estado actualizado exitosamente"
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al actualizar estado del pedido {Id}", id);
-                return ResponseDto<PedidoDto>.Failure("Error al actualizar el estado del pedido");
             }
         }
 
@@ -219,9 +290,11 @@ namespace SDME.Application.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener pedidos del día");
-                return ResponseDto<List<PedidoDto>>.Failure("Error al obtener los pedidos del día");
+                return ResponseDto<List<PedidoDto>>.Failure("Error al obtener los pedidos");
             }
         }
+
+        // ===== MÉTODOS PRIVADOS AUXILIARES =====
 
         private PedidoDto ConvertirADto(Pedido pedido)
         {

@@ -1,28 +1,30 @@
-using Microsoft.EntityFrameworkCore;
-using SDME.Application.Interfaces;
-using SDME.Application.Services;
-using SDME.Application.Validators.Usuario;
-using SDME.Domain.Interfaces;
-using SDME.Persistence;
+using SDME.Infrastructure.Dependencies;
 using SDME.Persistence.Context;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using SDME.Application.Validators.Usuario;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar logging
+// CONFIGURACIÓN DE LOGGING 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-// Add services to the container
+//CONFIGURACIÓN DE SERVICIOS
+
+// Registrar TODAS las dependencias con el método de extensión
+//    Esto incluye: DbContext, Repositories, UnitOfWork, Services y Logger
+builder.Services.AddDependencies(builder.Configuration);
+
+//  Controllers
 builder.Services.AddControllers();
 
-// Configurar FluentValidation
+// FluentValidation para validar DTOs
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegistrarUsuarioValidator>();
 
-// Configurar Swagger
+// Swagger para documentación de API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -39,23 +41,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configurar DbContext con PostgreSQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<SDMEDbContext>(options =>
-    options.UseNpgsql(connectionString)
-           .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
-           .LogTo(Console.WriteLine, LogLevel.Information));
-
-// Registrar Unit of Work
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
-// Registrar servicios de aplicación
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IProductoService, ProductoService>();
-builder.Services.AddScoped<IPedidoService, PedidoService>();
-builder.Services.AddScoped<ICategoriaService, CategoriaService>();
-
-// Configurar CORS
+// CORS para permitir peticiones desde el frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -66,9 +52,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+// CONSTRUCCIÓN DE LA APP
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// CONFIGURACIÓN DEL PIPELINE HTTP 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -80,12 +68,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
-
 app.UseAuthorization();
-
 app.MapControllers();
+
+//  ENDPOINTS ADICIONALES
 
 // Mensaje de bienvenida
 app.MapGet("/", () => new
@@ -95,7 +82,7 @@ app.MapGet("/", () => new
     documentacion = "/swagger"
 });
 
-// Endpoint de salud
+// health check
 app.MapGet("/health", async (SDMEDbContext context) =>
 {
     try
