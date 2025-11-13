@@ -1,0 +1,108 @@
+﻿@* SDME.Web/Views/Home/About.cshtml *@
+
+@{
+    ViewData["Title"] = "Acerca de Nosotros";
+}
+
+<div class="container py-5">
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-danger">
+            <i class="fas fa-utensils"></i> Acerca de Nosotros
+        </h1>
+        <p class="lead text-muted">Tradición, Sabor y Calidad desde 1990</p>
+    </div>
+
+    <!-- Nuestra Historia -->
+    <div class="row align-items-center mb-5">
+        <div class="col-md-6">
+            <img src="https://via.placeholder.com/500x350" alt="Nuestra Historia" class="img-fluid rounded shadow">
+        </div>
+        <div class="col-md-6">
+            <h2 class="text-danger mb-3">
+                <i class="fas fa-book"></i> Nuestra Historia
+            </h2>
+            <p>
+                D' Méndez Empanadas nació en 1990 como un pequeño negocio familiar en Santo Domingo. 
+                Don José Méndez, nuestro fundador, comenzó preparando empanadas con su receta familiar 
+                que había pasado de generación en generación.
+            </p>
+            <p>
+                Más de 30 años después, seguimos manteniendo la misma pasión y dedicación en cada empanada 
+                que preparamos. Hoy en día, somos una de las empresas de empanadas más reconocidas de la 
+                República Dominicana.
+            </p>
+        </div>
+    </div>
+
+    <!-- Nuestra Misión -->
+    <div class="row align-items-center mb-5">
+        <div class="col-md-6 order-md-2">
+            <img src="https://via.placeholder.com/500x350" alt="Nuestra Misión" class="img-fluid rounded shadow">
+        </div>
+        <div class="col-md-6 order-md-1">
+            <h2 class="text-danger mb-3">
+                <i class="fas fa-bullseye"></i> Nuestra Misión
+            </h2>
+            <p>
+                Ofrecer a nuestros clientes las mejores empanadas dominicanas, elaboradas con ingredientes 
+                frescos y de la más alta calidad, manteniendo la tradición familiar y brindando un servicio 
+                excepcional.
+            </p>
+        </div>
+    </div>
+
+    <!-- Valores -->
+    <div class="text-center mb-4">
+        <h2 class="text-danger mb-4">
+            <i class="fas fa-star"></i> Nuestros Valores
+        </h2>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3 text-center">
+            <div class="card h-100 border-danger">
+                <div class="card-body">
+                    <i class="fas fa-certificate fa-3x text-danger mb-3"></i>
+                    <h5>Calidad</h5>
+                    <p class="small">Ingredientes frescos y procesos certificados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 text-center">
+            <div class="card h-100 border-danger">
+                <div class="card-body">
+                    <i class="fas fa-users fa-3x text-danger mb-3"></i>
+                    <h5>Familia</h5>
+                    <p class="small">Negocio familiar con tradición</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 text-center">
+            <div class="card h-100 border-danger">
+                <div class="card-body">
+                    <i class="fas fa-heart fa-3x text-danger mb-3"></i>
+                    <h5>Pasión</h5>
+                    <p class="small">Amor por lo que hacemos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 text-center">
+            <div class="card h-100 border-danger">
+                <div class="card-body">
+                    <i class="fas fa-thumbs-up fa-3x text-danger mb-3"></i>
+                    <h5>Compromiso</h5>
+                    <p class="small">Satisfacción garantizada</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="text-center bg-danger text-white p-5 rounded">
+        <h3 class="mb-3">¿Listo para probar nuestras empanadas?</h3>
+        <a asp-controller="Productos" asp-action="Index" class="btn btn-warning btn-lg">
+            <i class="fas fa-utensils"></i> Ver Menú
+        </a>
+    </div>
+</div>

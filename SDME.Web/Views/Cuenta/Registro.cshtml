@@ -1,0 +1,207 @@
+﻿@* SDME.Web/Views/Cuenta/Registro.cshtml *@
+@model SDME.Application.DTOs.Usuario.RegistrarUsuarioDto
+
+@{
+    ViewData["Title"] = "Crear Cuenta";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <!-- Header -->
+                <div class="card-header bg-danger text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus"></i> Crear Cuenta
+                    </h3>
+                    <p class="mb-0 small">Regístrate para empezar a ordenar</p>
+                </div>
+
+                <div class="card-body p-4">
+                    <form asp-action="Registro" method="post" id="registroForm">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Nombre y Apellido -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Nombre" class="form-label">
+                                    <i class="fas fa-user"></i> Nombre *
+                                </label>
+                                <input asp-for="Nombre" class="form-control" placeholder="Juan" />
+                                <span asp-validation-for="Nombre" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Apellido" class="form-label">
+                                    <i class="fas fa-user"></i> Apellido *
+                                </label>
+                                <input asp-for="Apellido" class="form-control" placeholder="Pérez" />
+                                <span asp-validation-for="Apellido" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope"></i> Correo Electrónico *
+                            </label>
+                            <input asp-for="Email" class="form-control" placeholder="tu@email.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                            <div id="emailFeedback" class="small mt-1"></div>
+                        </div>
+
+                        <!-- Teléfono -->
+                        <div class="mb-3">
+                            <label asp-for="Telefono" class="form-label">
+                                <i class="fas fa-phone"></i> Teléfono *
+                            </label>
+                            <input asp-for="Telefono" class="form-control" 
+                                   placeholder="(809) 555-1234" id="telefonoInput" />
+                            <span asp-validation-for="Telefono" class="text-danger small"></span>
+                            <small class="text-muted">Formato: (809) XXX-XXXX</small>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">
+                                <i class="fas fa-lock"></i> Contraseña *
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Password" type="password" class="form-control" 
+                                       id="passwordInput" placeholder="Mínimo 6 caracteres" />
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword('passwordInput', 'toggleIcon1')">
+                                    <i class="fas fa-eye" id="toggleIcon1"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                            <!-- Indicador de fortaleza -->
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div id="passwordStrength" class="progress-bar" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Confirmar Password -->
+                        <div class="mb-3">
+                            <label asp-for="ConfirmarPassword" class="form-label">
+                                <i class="fas fa-lock"></i> Confirmar Contraseña *
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="ConfirmarPassword" type="password" class="form-control" 
+                                       id="confirmarPasswordInput" placeholder="Repite tu contraseña" />
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword('confirmarPasswordInput', 'toggleIcon2')">
+                                    <i class="fas fa-eye" id="toggleIcon2"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="ConfirmarPassword" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Términos y Condiciones -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="terminos" required>
+                            <label class="form-check-label" for="terminos">
+                                Acepto los <a href="#" class="text-danger">términos y condiciones</a>
+                            </label>
+                        </div>
+
+                        <!-- Errores de validación -->
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- Botón Submit -->
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-user-plus"></i> Crear Cuenta
+                            </button>
+                        </div>
+
+                        <!-- Link a Login -->
+                        <div class="text-center">
+                            <p class="mb-0">
+                                ¿Ya tienes cuenta? 
+                                <a asp-action="Login" class="text-danger fw-bold">
+                                    Inicia sesión aquí
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Link de regreso -->
+            <div class="text-center mt-3">
+                <a asp-controller="Home" asp-action="Index" class="text-muted">
+                    <i class="fas fa-arrow-left"></i> Volver al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Mostrar/ocultar contraseña
+        function togglePassword(inputId, iconId) {
+            var input = document.getElementById(inputId);
+            var icon = document.getElementById(iconId);
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Verificar disponibilidad de email (AJAX)
+        $('#Email').on('blur', function() {
+            var email = $(this).val();
+            if (email) {
+                $.get('@Url.Action("VerificarEmail", "Cuenta")', { email: email }, function(data) {
+                    var feedback = $('#emailFeedback');
+                    if (data.existe) {
+                        feedback.html('<span class="text-danger"><i class="fas fa-times-circle"></i> Este email ya está registrado</span>');
+                    } else {
+                        feedback.html('<span class="text-success"><i class="fas fa-check-circle"></i> Email disponible</span>');
+                    }
+                });
+            }
+        });
+
+        // Formateo automático de teléfono
+        $('#telefonoInput').on('input', function() {
+            var value = $(this).val().replace(/\D/g, '');
+            if (value.length >= 10) {
+                $(this).val('(' + value.substring(0, 3) + ') ' + 
+                           value.substring(3, 6) + '-' + value.substring(6, 10));
+            }
+        });
+
+        // Indicador de fortaleza de contraseña
+        $('#passwordInput').on('input', function() {
+            var password = $(this).val();
+            var strength = 0;
+            var bar = $('#passwordStrength');
+            
+            if (password.length >= 6) strength += 25;
+            if (password.length >= 10) strength += 25;
+            if (/[A-Z]/.test(password)) strength += 25;
+            if (/[0-9]/.test(password)) strength += 25;
+            
+            bar.css('width', strength + '%');
+            
+            if (strength < 50) {
+                bar.removeClass('bg-warning bg-success').addClass('bg-danger');
+            } else if (strength < 75) {
+                bar.removeClass('bg-danger bg-success').addClass('bg-warning');
+            } else {
+                bar.removeClass('bg-danger bg-warning').addClass('bg-success');
+            }
+        });
+    </script>
+}

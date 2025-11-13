@@ -1,0 +1,120 @@
+﻿
+@model SDME.Application.DTOs.Usuario.LoginDto
+
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+    Layout = "_Layout";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <!-- Header -->
+                <div class="card-header bg-danger text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                    </h3>
+                    <p class="mb-0 small">Ingresa a tu cuenta</p>
+                </div>
+
+                <div class="card-body p-4">
+                    <form asp-action="Login" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope"></i> Correo Electrónico
+                            </label>
+                            <input asp-for="Email" class="form-control form-control-lg" 
+                                   placeholder="tu@email.com" autofocus />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">
+                                <i class="fas fa-lock"></i> Contraseña
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Password" type="password" class="form-control form-control-lg" 
+                                       id="passwordInput" placeholder="••••••••" />
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword()">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Recordarme (opcional) -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="recordar">
+                            <label class="form-check-label" for="recordar">
+                                Recordarme
+                            </label>
+                        </div>
+
+                        <!-- Mostrar errores de validación del ModelState -->
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Botón de Submit -->
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                            </button>
+                        </div>
+
+                        <!-- Link a Registro -->
+                        <div class="text-center">
+                            <p class="mb-0">
+                                ¿No tienes cuenta? 
+                                <a asp-action="Registro" class="text-danger fw-bold">
+                                    Regístrate aquí
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer del Card -->
+                <div class="card-footer text-center bg-light">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt"></i> Tu información está segura
+                    </small>
+                </div>
+            </div>
+
+            <!-- Link de regreso -->
+            <div class="text-center mt-3">
+                <a asp-controller="Home" asp-action="Index" class="text-muted">
+                    <i class="fas fa-arrow-left"></i> Volver al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Mostrar/ocultar contraseña
+        function togglePassword() {
+            var passwordInput = document.getElementById('passwordInput');
+            var toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+    </script>
+}

@@ -1,32 +1,85 @@
 using Microsoft.AspNetCore.Mvc;
-using SDME.Web.Models;
-using System.Diagnostics;
+using SDME.Application.Interfaces;
+using SDME.Web.ViewModels;
+
 
 namespace SDME.Web.Controllers
 {
-    public class HomeController : Controller
-    {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        /// <summary>
+        /// Controlador para la página principal y páginas estáticas
+        /// </summary>
+        public class HomeController : Controller
         {
-            _logger = logger;
-        }
+            private readonly ICategoriaService _categoriaService;
+            private readonly IProductoService _productoService;
+            private readonly ILogger<HomeController> _logger;
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+            public HomeController(
+                ICategoriaService categoriaService,
+                IProductoService productoService,
+                ILogger<HomeController> logger)
+            {
+                _categoriaService = categoriaService;
+                _productoService = productoService;
+                _logger = logger;
+            }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+            /// <summary>
+            /// Página principal - Muestra categorías y productos destacados
+            /// </summary>
+            [HttpGet]
+            public async Task<IActionResult> Index()
+            {
+                try
+                {
+                    var categoriasResult = await _categoriaService.ObtenerTodasAsync();
+                    var productosResult = await _productoService.ObtenerDisponiblesAsync();
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+                    var viewModel = new HomeViewModel
+                    {
+                        Categorias = categoriasResult.Data ?? new(),
+                        ProductosDestacados = productosResult.Data?.Take(6).ToList() ?? new(),
+                        UsuarioAutenticado = User.Identity?.IsAuthenticated ?? false,
+                        NombreUsuario = User.Identity?.Name
+                    };
+
+                    return View(viewModel);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error al cargar la página principal");
+                    return View("Error");
+                }
+            }
+
+            /// <summary>
+            /// Página Acerca de Nosotros
+            /// </summary>
+            [HttpGet]
+            public IActionResult About()
+            {
+                ViewData["Title"] = "Acerca de Nosotros";
+                return View();
+            }
+
+            /// <summary>
+            /// Página de Contacto
+            /// </summary>
+            [HttpGet]
+            public IActionResult Contact()
+            {
+                ViewData["Title"] = "Contacto";
+                return View();
+            }
+
+            /// <summary>
+            /// Página de Error genérica
+            /// </summary>
+            [HttpGet]
+            [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+            public IActionResult Error()
+            {
+                return View();
+            }
         }
     }
-}

@@ -1,2 +1,53 @@
-﻿<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+﻿
+@* Scripts de validación para formularios *@
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+
+<script>
+    // Configuración global de validación
+    $.validator.setDefaults({
+        highlight: function(element) {
+            $(element).addClass('is-invalid');
+        },
+        unhighlight: function(element) {
+            $(element).removeClass('is-invalid');
+        },
+        errorElement: 'span',
+        errorClass: 'invalid-feedback',
+        errorPlacement: function(error, element) {
+            if (element.parent('.input-group').length) {
+                error.insertAfter(element.parent());
+            } else {
+                error.insertAfter(element);
+            }
+        }
+    });
+
+    // Mensajes de validación en español
+    $.extend($.validator.messages, {
+        required: "Este campo es obligatorio.",
+        email: "Por favor, ingresa un email válido.",
+        url: "Por favor, ingresa una URL válida.",
+        date: "Por favor, ingresa una fecha válida.",
+        number: "Por favor, ingresa un número válido.",
+        digits: "Por favor, ingresa solo dígitos.",
+        equalTo: "Por favor, ingresa el mismo valor nuevamente.",
+        maxlength: $.validator.format("Por favor, no ingreses más de {0} caracteres."),
+        minlength: $.validator.format("Por favor, ingresa al menos {0} caracteres."),
+        rangelength: $.validator.format("Por favor, ingresa un valor entre {0} y {1} caracteres."),
+        range: $.validator.format("Por favor, ingresa un valor entre {0} y {1}."),
+        max: $.validator.format("Por favor, ingresa un valor menor o igual a {0}."),
+        min: $.validator.format("Por favor, ingresa un valor mayor o igual a {0}.")
+    });
+
+    // Validación personalizada para teléfono dominicano
+    $.validator.addMethod("telefonoRD", function(value, element) {
+        return this.optional(element) || /^(\(?(809|829|849)\)?[\s.-]?)?\d{3}[\s.-]?\d{4}$/.test(value);
+    }, "Por favor, ingresa un teléfono válido (809/829/849).");
+
+    // Validación personalizada para cédula dominicana
+    $.validator.addMethod("cedulaRD", function(value, element) {
+        return this.optional(element) || /^\d{3}-?\d{7}-?\d{1}$/.test(value);
+    }, "Por favor, ingresa una cédula válida (XXX-XXXXXXX-X).");
+</script>

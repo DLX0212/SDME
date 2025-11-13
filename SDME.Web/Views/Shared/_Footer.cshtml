@@ -1,0 +1,74 @@
+﻿@* Pie de página *@
+
+<footer class="bg-dark text-white mt-5 py-4">
+    <div class="container">
+        <div class="row">
+            <!-- Columna 1: Información -->
+            <div class="col-md-4 mb-3">
+                <h5 class="text-warning">
+                    <i class="fas fa-utensils"></i> D' Méndez Empanadas
+                </h5>
+                <p class="small">
+                    Las mejores empanadas de la República Dominicana.
+                    Calidad, sabor y tradición en cada bocado.
+                </p>
+            </div>
+
+            <!-- Columna 2: Enlaces Rápidos -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-warning">Enlaces Rápidos</h6>
+                <ul class="list-unstyled">
+                    <li>
+                        <a asp-controller="Home" asp-action="Index" class="text-white text-decoration-none">
+                            <i class="fas fa-home"></i> Inicio
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Productos" asp-action="Index" class="text-white text-decoration-none">
+                            <i class="fas fa-utensils"></i> Menú
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Home" asp-action="About" class="text-white text-decoration-none">
+                            <i class="fas fa-info-circle"></i> Acerca de Nosotros
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Home" asp-action="Contact" class="text-white text-decoration-none">
+                            <i class="fas fa-envelope"></i> Contacto
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Columna 3: Contacto -->
+            <div class="col-md-4 mb-3">
+                <h6 class="text-warning">Contáctanos</h6>
+                <ul class="list-unstyled">
+                    <li>
+                        <i class="fas fa-phone"></i> (809) 555-1234
+                    </li>
+                    <li>
+                        <i class="fas fa-envelope"></i> info@dmendezempanadas.com
+                    </li>
+                    <li>
+                        <i class="fas fa-map-marker-alt"></i> Santo Domingo, RD
+                    </li>
+                </ul>
+                <div class="mt-3">
+                    <a href="#" class="text-white me-3"><i class="fab fa-facebook fa-lg"></i></a>
+                    <a href="#" class="text-white me-3"><i class="fab fa-instagram fa-lg"></i></a>
+                    <a href="#" class="text-white"><i class="fab fa-whatsapp fa-lg"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Copyright -->
+        <hr class="border-secondary">
+        <div class="text-center small">
+            <p class="mb-0">
+                &copy; @DateTime.Now.Year D' Méndez Empanadas. Todos los derechos reservados.
+            </p>
+        </div>
+    </div>
+</footer>

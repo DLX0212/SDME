@@ -1,0 +1,101 @@
+﻿@* Barra de navegación superior *@
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-danger sticky-top shadow">
+    <div class="container">
+        <!-- Logo/Marca -->
+        <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">
+            <i class="fas fa-utensils"></i> D' Méndez Empanadas
+        </a>
+
+        <!-- Botón para móvil -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Menú de navegación -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Menú izquierdo -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="Index">
+                        <i class="fas fa-home"></i> Inicio
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Productos" asp-action="Index">
+                        <i class="fas fa-utensils"></i> Menú
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="About">
+                        <i class="fas fa-info-circle"></i> Nosotros
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="Contact">
+                        <i class="fas fa-envelope"></i> Contacto
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Menú derecho -->
+            <ul class="navbar-nav">
+                <!-- Carrito -->
+                <li class="nav-item">
+                    <a class="nav-link position-relative" asp-controller="Carrito" asp-action="Index">
+                        <i class="fas fa-shopping-cart fa-lg"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" id="carrito-badge">
+                            0
+                        </span>
+                    </a>
+                </li>
+
+                @* Verificar si el usuario está autenticado *@
+                @if (Context.Session.GetInt32("UsuarioId") != null)
+                {
+                    <!-- Usuario autenticado -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> @Context.Session.GetString("UsuarioNombre")
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" asp-controller="Cuenta" asp-action="Perfil">
+                                    <i class="fas fa-user-circle"></i> Mi Perfil
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" asp-controller="Pedidos" asp-action="Index">
+                                    <i class="fas fa-box"></i> Mis Pedidos
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form asp-controller="Cuenta" asp-action="Logout" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    <!-- Usuario NO autenticado -->
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Cuenta" asp-action="Login">
+                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light ms-2" asp-controller="Cuenta" asp-action="Registro">
+                            Registrarse
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</nav>

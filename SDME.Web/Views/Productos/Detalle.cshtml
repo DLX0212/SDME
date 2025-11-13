@@ -1,0 +1,149 @@
+﻿@* SDME.Web/Views/Productos/Detalle.cshtml *@
+@model SDME.Application.DTOs.Producto.ProductoDto
+
+@{
+    ViewData["Title"] = Model.Nombre;
+}
+
+<div class="container py-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-controller="Home" asp-action="Index">Inicio</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a asp-controller="Productos" asp-action="Index">Menú</a>
+            </li>
+            <li class="breadcrumb-item active">@Model.Nombre</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Imagen del Producto -->
+        <div class="col-md-6 mb-4">
+            @if (!string.IsNullOrEmpty(Model.ImagenUrl))
+            {
+                <img src="@Model.ImagenUrl" class="img-fluid rounded shadow" alt="@Model.Nombre">
+            }
+            else
+            {
+                <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded shadow" style="height: 400px;">
+                    <i class="fas fa-image fa-5x"></i>
+                </div>
+            }
+        </div>
+
+        <!-- Información del Producto -->
+        <div class="col-md-6">
+            <h1 class="display-5 fw-bold mb-3">@Model.Nombre</h1>
+
+           
+
+            <!-- Descripción -->
+            <p class="lead mb-4">@Model.Descripcion</p>
+
+            <!-- Precio -->
+            <div class="mb-4">
+                <h2 class="display-4 text-danger">
+                    RD$ @Model.Precio.ToString("N2")
+                </h2>
+            </div>
+
+            <!-- Disponibilidad y Stock -->
+            <div class="mb-4">
+                @if (Model.Disponible && Model.Stock > 0)
+                {
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> 
+                        <strong>Disponible</strong> - Stock: @Model.Stock unidades
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-times-circle"></i> 
+                        <strong>Sin Stock</strong> - No disponible actualmente
+                    </div>
+                }
+            </div>
+
+            <!-- Formulario para agregar al carrito -->
+            @if (Model.Disponible && Model.Stock > 0)
+            {
+                <form asp-controller="Carrito" asp-action="Agregar" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="productoId" value="@Model.Id" />
+
+                    <!-- Cantidad -->
+                    <div class="mb-3">
+                        <label for="cantidad" class="form-label fw-bold">Cantidad:</label>
+                        <div class="input-group" style="max-width: 200px;">
+                            <button class="btn btn-outline-danger" type="button" onclick="decrementarCantidad()">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" class="form-control text-center" id="cantidad" name="cantidad" 
+                                   value="1" min="1" max="@Model.Stock">
+                            <button class="btn btn-outline-danger" type="button" onclick="incrementarCantidad(@Model.Stock)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notas Especiales -->
+                    <div class="mb-3">
+                        <label for="notasEspeciales" class="form-label fw-bold">
+                            Notas Especiales (opcional):
+                        </label>
+                        <textarea class="form-control" id="notasEspeciales" name="notasEspeciales" 
+                                  rows="2" placeholder="Ej: Sin cebolla, extra picante..."></textarea>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="fas fa-cart-plus"></i> Agregar al Carrito
+                        </button>
+                        <a asp-controller="Productos" asp-action="Index" class="btn btn-outline-danger">
+                            <i class="fas fa-arrow-left"></i> Volver al Menú
+                        </a>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <a asp-controller="Productos" asp-action="Index" class="btn btn-outline-danger btn-lg">
+                    <i class="fas fa-arrow-left"></i> Volver al Menú
+                </a>
+            }
+        </div>
+    </div>
+
+
+
+@section Scripts {
+    <script>
+        // Incrementar cantidad
+        function incrementarCantidad(max) {
+            var input = document.getElementById('cantidad');
+            var valor = parseInt(input.value);
+            if (valor < max) {
+                input.value = valor + 1;
+            }
+        }
+
+        // Decrementar cantidad
+        function decrementarCantidad() {
+            var input = document.getElementById('cantidad');
+            var valor = parseInt(input.value);
+            if (valor > 1) {
+                input.value = valor - 1;
+            }
+        }
+
+        // Actualizar badge del carrito
+        $(document).ready(function() {
+            actualizarBadgeCarrito();
+        });
+    </script>
+}
