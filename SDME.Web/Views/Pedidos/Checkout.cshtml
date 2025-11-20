@@ -1,0 +1,186 @@
+﻿
+@model SDME.Web.ViewModels.CarritoViewModel
+
+@{
+    ViewData["Title"] = "Confirmar Pedido";
+}
+
+<div class="container py-5">
+    <h1 class="display-5 fw-bold text-danger mb-4">
+        <i class="fas fa-check-circle"></i> Confirmar Pedido
+    </h1>
+
+    <div class="row">
+        <!-- Resumen del Carrito -->
+        <div class="col-md-7 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shopping-cart"></i> Resumen del Pedido
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.TieneItems)
+                    {
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-end">Precio</th>
+                                        <th class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.Items)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@item.Nombre</strong>
+                                                @if (!string.IsNullOrEmpty(item.NotasEspeciales))
+                                                {
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-sticky-note"></i> @item.NotasEspeciales
+                                                    </small>
+                                                }
+                                            </td>
+                                            <td class="text-center">@item.Cantidad</td>
+                                            <td class="text-end">RD$ @item.PrecioUnitario.ToString("N2")</td>
+                                            <td class="text-end fw-bold">RD$ @item.Subtotal.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                        <td class="text-end">RD$ @Model.Subtotal.ToString("N2")</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-end"><strong>ITBIS (18%):</strong></td>
+                                        <td class="text-end">RD$ @Model.Impuesto.ToString("N2")</td>
+                                    </tr>
+                                    <tr class="table-active">
+                                        <td colspan="3" class="text-end"><h5><strong>Total:</strong></h5></td>
+                                        <td class="text-end"><h5 class="text-danger"><strong>RD$ @Model.Total.ToString("N2")</strong></h5></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Confirmación -->
+        <div class="col-md-5">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check"></i> Datos de Entrega
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Confirmar" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Tipo de Entrega -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-truck"></i> Tipo de Entrega *
+                            </label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="tipoEntrega" 
+                                       id="domicilio" value="Domicilio" checked>
+                                <label class="form-check-label" for="domicilio">
+                                    <i class="fas fa-home"></i> Entrega a Domicilio
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="tipoEntrega" 
+                                       id="recoger" value="Recoger">
+                                <label class="form-check-label" for="recoger">
+                                    <i class="fas fa-store"></i> Recoger en Tienda
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Dirección (Mostrar solo si es domicilio) -->
+                        <div class="mb-3" id="direccionContainer">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt"></i> Dirección de Entrega
+                            </label>
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="fas fa-info-circle"></i> 
+                                    Entregas disponibles en Santo Domingo y área metropolitana.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Notas Especiales -->
+                        <div class="mb-3">
+                            <label for="notasEspeciales" class="form-label fw-bold">
+                                <i class="fas fa-sticky-note"></i> Notas Especiales (Opcional)
+                            </label>
+                            <textarea class="form-control" id="notasEspeciales" name="notasEspeciales" 
+                                      rows="3" placeholder="Instrucciones adicionales..."></textarea>
+                        </div>
+
+                        <!-- Términos y Condiciones -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="terminos" required>
+                            <label class="form-check-label" for="terminos">
+                                Acepto los <a href="#" class="text-danger">términos y condiciones</a>
+                            </label>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-check-circle"></i> Confirmar Pedido
+                            </button>
+                            <a asp-controller="Carrito" asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver al Carrito
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="card shadow">
+                <div class="card-body">
+                    <h6 class="card-title text-danger">
+                        <i class="fas fa-info-circle"></i> Información Importante
+                    </h6>
+                    <ul class="small mb-0">
+                        <li>Tiempo estimado de entrega: 30-45 minutos</li>
+                        <li>Pedido mínimo para delivery: RD$ 200.00</li>
+                        <li>Métodos de pago: Efectivo o transferencia</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Mostrar/ocultar dirección según tipo de entrega
+        $('input[name="tipoEntrega"]').change(function() {
+            if ($(this).val() === 'Domicilio') {
+                $('#direccionContainer').show();
+            } else {
+                $('#direccionContainer').hide();
+            }
+        });
+
+        // Prevenir doble submit
+        $('form').on('submit', function() {
+            $(this).find('button[type="submit"]').prop('disabled', true)
+                   .html('<span class="spinner-border spinner-border-sm me-2"></span>Procesando...');
+        });
+    </script>
+}

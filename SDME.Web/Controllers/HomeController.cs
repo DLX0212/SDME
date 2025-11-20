@@ -1,85 +1,77 @@
 using Microsoft.AspNetCore.Mvc;
-using SDME.Application.Interfaces;
 using SDME.Web.ViewModels;
-
+using SDME.Web.Services;
 
 namespace SDME.Web.Controllers
 {
-        /// <summary>
-        /// Controlador para la página principal y páginas estáticas
-        /// </summary>
-        public class HomeController : Controller
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+        private readonly CategoriaApiService _categoriaApiService;
+        private readonly ProductoApiService _productoApiService;
+
+        public HomeController(
+            ILogger<HomeController> logger,
+            CategoriaApiService categoriaApiService,
+            ProductoApiService productoApiService)
         {
-            private readonly ICategoriaService _categoriaService;
-            private readonly IProductoService _productoService;
-            private readonly ILogger<HomeController> _logger;
+            _logger = logger;
+            _categoriaApiService = categoriaApiService;
+            _productoApiService = productoApiService;
+        }
 
-            public HomeController(
-                ICategoriaService categoriaService,
-                IProductoService productoService,
-                ILogger<HomeController> logger)
+        public async Task<IActionResult> Index()
+        {
+            var viewModel = new HomeViewModel
             {
-                _categoriaService = categoriaService;
-                _productoService = productoService;
-                _logger = logger;
-            }
+                UsuarioAutenticado = HttpContext.Session.GetInt32("UsuarioId").HasValue,
+                NombreUsuario = HttpContext.Session.GetString("UsuarioNombre")
+            };
 
-            /// <summary>
-            /// Página principal - Muestra categorías y productos destacados
-            /// </summary>
-            [HttpGet]
-            public async Task<IActionResult> Index()
+            try
             {
-                try
+                // Obtener categorías
+                var categoriasResult = await _categoriaApiService.ObtenerTodasAsync();
+                if (categoriasResult.Exito)
                 {
-                    var categoriasResult = await _categoriaService.ObtenerTodasAsync();
-                    var productosResult = await _productoService.ObtenerDisponiblesAsync();
-
-                    var viewModel = new HomeViewModel
-                    {
-                        Categorias = categoriasResult.Data ?? new(),
-                        ProductosDestacados = productosResult.Data?.Take(6).ToList() ?? new(),
-                        UsuarioAutenticado = User.Identity?.IsAuthenticated ?? false,
-                        NombreUsuario = User.Identity?.Name
-                    };
-
-                    return View(viewModel);
+                    viewModel.Categorias = categoriasResult.Data ?? new();
                 }
-                catch (Exception ex)
+
+                // Obtener productos destacados (primeros 6 disponibles)
+                var productosResult = await _productoApiService.ObtenerDisponiblesAsync();
+                if (productosResult.Exito && productosResult.Data != null)
                 {
-                    _logger.LogError(ex, "Error al cargar la página principal");
-                    return View("Error");
+                    viewModel.ProductosDestacados = productosResult.Data.Take(6).ToList();
                 }
             }
-
-            /// <summary>
-            /// Página Acerca de Nosotros
-            /// </summary>
-            [HttpGet]
-            public IActionResult About()
+            catch (Exception ex)
             {
-                ViewData["Title"] = "Acerca de Nosotros";
-                return View();
+                _logger.LogError(ex, "Error al cargar datos del Home");
+                // No mostrar error, solo devolver vista vacía
             }
 
-            /// <summary>
-            /// Página de Contacto
-            /// </summary>
-            [HttpGet]
-            public IActionResult Contact()
-            {
-                ViewData["Title"] = "Contacto";
-                return View();
-            }
+            return View(viewModel);
+        }
 
-            /// <summary>
-            /// Página de Error genérica
-            /// </summary>
-            [HttpGet]
-            [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-            public IActionResult Error()
-            {
-                return View();
-            }
+        public IActionResult About()
+        {
+            return View();
+        }
+
+        public IActionResult Contact()
+        {
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View();
         }
     }
+}

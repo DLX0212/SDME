@@ -1,32 +1,39 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SDME.Application.Interfaces;
+using SDME.Web.Services;
 using SDME.Web.ViewModels;
 
 namespace SDME.Web.Controllers
 {
-    /// Controlador para visualizar el menú de productos
-    public class ProductosController : Controller 
+    /// Controlador para visualizar el menú de productos  ( Ahora consume la API REST en lugar de servicios directos)
+    public class ProductosController : Controller
     {
-        private readonly IProductoService _productoService;
-        private readonly ICategoriaService _categoriaService;
+        private readonly ProductoApiService _productoApiService;
+        private readonly CategoriaApiService _categoriaApiService;
         private readonly ILogger<ProductosController> _logger;
 
-        public ProductosController(IProductoService productoService, ICategoriaService categoriaService, ILogger<ProductosController> logger)
+        public ProductosController(
+            ProductoApiService productoApiService,
+            CategoriaApiService categoriaApiService,
+            ILogger<ProductosController> logger)
         {
-            _productoService = productoService;
-            _categoriaService = categoriaService;
+            _productoApiService = productoApiService;
+            _categoriaApiService = categoriaApiService;
             _logger = logger;
         }
-        // GET: /Productos o /menu: Muestra el menú completo con todas las categorías
+
+        /// GET: /Productos: Muestra el menú completo con todas las categorías
+     
         [HttpGet]
         public async Task<IActionResult> Index(int? categoriaId, string? busqueda)
         {
             try
             {
-                var categoriasResult = await _categoriaService.ObtenerTodasAsync();
+                // Obtener categorías desde la API
+                var categoriasResult = await _categoriaApiService.ObtenerTodasAsync();
+
                 var viewModel = new MenuViewModel
                 {
-                    Categorias = categoriasResult.Data ?? new(),
+                    Categorias = categoriasResult.Exito ? categoriasResult.Data ?? new() : new(),
                     CategoriaSeleccionadaId = categoriaId,
                     TerminoBusqueda = busqueda
                 };
@@ -34,23 +41,41 @@ namespace SDME.Web.Controllers
                 // Filtrar productos según parámetros
                 if (!string.IsNullOrWhiteSpace(busqueda))
                 {
-                    var resultadoBusqueda = await _productoService.BuscarAsync(busqueda);
-                    viewModel.Productos = resultadoBusqueda.Data ?? new();
+                    // Buscar productos por término
+                    var resultadoBusqueda = await _productoApiService.BuscarAsync(busqueda);
+                    viewModel.Productos = resultadoBusqueda.Exito ? resultadoBusqueda.Data ?? new() : new();
                     viewModel.TituloSeccion = $"Resultados para '{busqueda}'";
+
+                    if (!resultadoBusqueda.Exito)
+                    {
+                        TempData["Warning"] = resultadoBusqueda.Mensaje;
+                    }
                 }
                 else if (categoriaId.HasValue)
                 {
-                    var resultadoCategoria = await _productoService.ObtenerPorCategoriaAsync(categoriaId.Value);
-                    viewModel.Productos = resultadoCategoria.Data ?? new();
+                    // Obtener productos por categoría
+                    var resultadoCategoria = await _productoApiService.ObtenerPorCategoriaAsync(categoriaId.Value);
+                    viewModel.Productos = resultadoCategoria.Exito ? resultadoCategoria.Data ?? new() : new();
 
                     var categoriaNombre = viewModel.Categorias
                         .FirstOrDefault(c => c.Id == categoriaId.Value)?.Nombre ?? "Categoría";
                     viewModel.TituloSeccion = categoriaNombre;
+
+                    if (!resultadoCategoria.Exito)
+                    {
+                        TempData["Warning"] = resultadoCategoria.Mensaje;
+                    }
                 }
                 else
                 {
-                    var todosProductos = await _productoService.ObtenerDisponiblesAsync();
-                    viewModel.Productos = todosProductos.Data ?? new();
+                    // Obtener todos los productos disponibles
+                    var todosProductos = await _productoApiService.ObtenerDisponiblesAsync();
+                    viewModel.Productos = todosProductos.Exito ? todosProductos.Data ?? new() : new();
+
+                    if (!todosProductos.Exito)
+                    {
+                        TempData["Warning"] = todosProductos.Mensaje;
+                    }
                 }
 
                 return View(viewModel);
@@ -62,6 +87,7 @@ namespace SDME.Web.Controllers
                 return RedirectToAction("Index", "Home");
             }
         }
+
         /// GET: /Productos/Detalle/5: Muestra el detalle de un producto específico
 
         [HttpGet]
@@ -69,11 +95,11 @@ namespace SDME.Web.Controllers
         {
             try
             {
-                var resultado = await _productoService.ObtenerPorIdAsync(id);
+                var resultado = await _productoApiService.ObtenerPorIdAsync(id);
 
                 if (!resultado.Exito || resultado.Data == null)
                 {
-                    TempData["Error"] = "Producto no encontrado.";
+                    TempData["Error"] = resultado.Mensaje ?? "Producto no encontrado.";
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -87,7 +113,6 @@ namespace SDME.Web.Controllers
             }
         }
 
-
         /// GET: /Productos/PorCategoria/1: Muestra productos de una categoría específica
 
         [HttpGet]
@@ -96,8 +121,8 @@ namespace SDME.Web.Controllers
             return await Index(categoriaId: id, busqueda: null);
         }
 
-
         /// POST: /Productos/Buscar: Busca productos por término
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Buscar(string termino)
@@ -112,4 +137,3 @@ namespace SDME.Web.Controllers
     }
 }
 
-    

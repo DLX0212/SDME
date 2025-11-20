@@ -1,20 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SDME.Application.DTOs.Usuario;
-using SDME.Application.Interfaces;
+using SDME.Web.Services;
 
 namespace SDME.Web.Controllers
 {
-// Controlador para autenticación y gestión de cuenta de usuario
-public class CuentaController : Controller
+
+    /// Controlador para autenticación y gestión de cuenta, Ahora consume la API REST
+
+    public class CuentaController : Controller
     {
-        private readonly IUsuarioService _usuarioService;
+        private readonly UsuarioApiService _usuarioApiService;
         private readonly ILogger<CuentaController> _logger;
 
         public CuentaController(
-            IUsuarioService usuarioService,
+            UsuarioApiService usuarioApiService,
             ILogger<CuentaController> logger)
         {
-            _usuarioService = usuarioService;
+            _usuarioApiService = usuarioApiService;
             _logger = logger;
         }
 
@@ -29,7 +31,8 @@ public class CuentaController : Controller
         }
 
 
-        /// POST: /Cuenta/Login: Procesa el inicio de sesión
+        /// POST: /Cuenta/Login: Procesa el inicio de sesión consumiendo la API
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginDto loginDto, string? returnUrl = null)
@@ -41,17 +44,20 @@ public class CuentaController : Controller
                     return View(loginDto);
                 }
 
-                var resultado = await _usuarioService.LoginAsync(loginDto);
+                // Consumir API de login
+                var resultado = await _usuarioApiService.LoginAsync(loginDto);
 
                 if (!resultado.Exito || resultado.Data == null)
                 {
-                    ModelState.AddModelError(string.Empty, "Email o contraseña incorrectos.");
+                    ModelState.AddModelError(string.Empty, resultado.Mensaje ?? "Email o contraseña incorrectos.");
                     return View(loginDto);
                 }
 
+                // Guardar información en sesión
                 HttpContext.Session.SetInt32("UsuarioId", resultado.Data.Usuario.Id);
                 HttpContext.Session.SetString("UsuarioNombre", resultado.Data.Usuario.NombreCompleto);
                 HttpContext.Session.SetString("UsuarioEmail", resultado.Data.Usuario.Email);
+                HttpContext.Session.SetString("UsuarioToken", resultado.Data.Token);
 
                 TempData["Success"] = $"¡Bienvenido, {resultado.Data.Usuario.Nombre}!";
 
@@ -66,10 +72,11 @@ public class CuentaController : Controller
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en login para {Email}", loginDto.Email);
-                ModelState.AddModelError(string.Empty, "Ocurrió un error al iniciar sesión.");
+                ModelState.AddModelError(string.Empty, "Ocurrió un error al iniciar sesión. Intenta nuevamente.");
                 return View(loginDto);
             }
         }
+
 
         /// GET: /Cuenta/Registro: Muestra el formulario de registro
 
@@ -79,7 +86,8 @@ public class CuentaController : Controller
             return View();
         }
 
-        /// POST: /Cuenta/Registro: Procesa el registro de nuevo usuario
+
+        /// POST: /Cuenta/Registro: Procesa el registro de nuevo usuario consumiendo la API
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -92,16 +100,16 @@ public class CuentaController : Controller
                     return View(registroDto);
                 }
 
-                // Verificar que el email no exista
-                var emailExiste = await _usuarioService.ExisteEmailAsync(registroDto.Email);
-                if (emailExiste.Data)
+                // Verificar que el email no exista (consumir API)
+                var emailExisteResult = await _usuarioApiService.ExisteEmailAsync(registroDto.Email);
+                if (emailExisteResult.Exito && emailExisteResult.Data)
                 {
                     ModelState.AddModelError("Email", "Este email ya está registrado.");
                     return View(registroDto);
                 }
 
-                // Registrar usuario
-                var resultado = await _usuarioService.RegistrarAsync(registroDto);
+                // Registrar usuario (consumir API)
+                var resultado = await _usuarioApiService.RegistrarAsync(registroDto);
 
                 if (!resultado.Exito)
                 {
@@ -115,12 +123,13 @@ public class CuentaController : Controller
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en registro para {Email}", registroDto.Email);
-                ModelState.AddModelError(string.Empty, "Ocurrió un error al registrar tu cuenta.");
+                ModelState.AddModelError(string.Empty, "Ocurrió un error al registrar tu cuenta. Intenta nuevamente.");
                 return View(registroDto);
             }
         }
 
-        /// POST: /Cuenta/Logout : Cierra la sesión del usuario
+
+        /// POST: /Cuenta/Logout: Cierra la sesión del usuario
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -131,7 +140,9 @@ public class CuentaController : Controller
             return RedirectToAction("Index", "Home");
         }
 
+
         /// GET: /Cuenta/Perfil: Muestra el perfil del usuario autenticado
+
         [HttpGet]
         public async Task<IActionResult> Perfil()
         {
@@ -145,11 +156,12 @@ public class CuentaController : Controller
                     return RedirectToAction(nameof(Login));
                 }
 
-                var resultado = await _usuarioService.ObtenerPorIdAsync(usuarioId.Value);
+                // Consumir API para obtener usuario
+                var resultado = await _usuarioApiService.ObtenerPorIdAsync(usuarioId.Value);
 
                 if (!resultado.Exito || resultado.Data == null)
                 {
-                    TempData["Error"] = "No se pudo cargar tu perfil.";
+                    TempData["Error"] = resultado.Mensaje ?? "No se pudo cargar tu perfil.";
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -164,7 +176,7 @@ public class CuentaController : Controller
         }
 
 
-        /// POST: /Cuenta/ActualizarPerfil:  Actualiza la información del perfil del usuario
+        /// POST: /Cuenta/ActualizarPerfil: Actualiza la información del perfil del usuario
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -185,16 +197,13 @@ public class CuentaController : Controller
                     return View("Perfil", actualizarDto);
                 }
 
-                var resultado = await _usuarioService.ActualizarAsync(usuarioId.Value, actualizarDto);
+                // Consumir API para actualizar
+                var resultado = await _usuarioApiService.ActualizarAsync(usuarioId.Value, actualizarDto);
 
-                if (resultado.Exito)
+                if (resultado.Exito && resultado.Data != null)
                 {
                     // Actualizar nombre en sesión
-                    if (resultado.Data != null)
-                    {
-                        HttpContext.Session.SetString("UsuarioNombre", resultado.Data.NombreCompleto);
-                    }
-
+                    HttpContext.Session.SetString("UsuarioNombre", resultado.Data.NombreCompleto);
                     TempData["Success"] = "Perfil actualizado exitosamente.";
                 }
                 else
@@ -214,12 +223,12 @@ public class CuentaController : Controller
 
 
         /// GET: /Cuenta/VerificarEmail: Verifica si un email ya está registrado
+
         [HttpGet]
         public async Task<IActionResult> VerificarEmail(string email)
         {
-            var resultado = await _usuarioService.ExisteEmailAsync(email);
-            return Json(new { existe = resultado.Data });
+            var resultado = await _usuarioApiService.ExisteEmailAsync(email);
+            return Json(new { existe = resultado.Exito && resultado.Data });
         }
     }
 }
-
