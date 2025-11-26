@@ -24,12 +24,14 @@ builder.Services.AddHttpClient("SDMEAPI", client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-//REFACTORY (Scoped por singleton)
+// HttpClient: Singleton (reutilizable y eficiente)
 builder.Services.AddSingleton<IHttpClientService, HttpClientService>();
-builder.Services.AddSingleton<IProductoService, ProductoApiService>();
-builder.Services.AddSingleton<ICategoriaService, CategoriaApiService>();
-builder.Services.AddSingleton<IPedidoService, PedidoApiService>();
-builder.Services.AddSingleton<IUsuarioService, UsuarioApiService>();
+
+// Servicios de negocio: Scoped (aislados por request)
+builder.Services.AddScoped<IProductoService, ProductoApiService>();
+builder.Services.AddScoped<ICategoriaService, CategoriaApiService>();
+builder.Services.AddScoped<IPedidoService, PedidoApiService>();
+builder.Services.AddScoped<IUsuarioService, UsuarioApiService>();
 
 // Dependencias
 builder.Services.AddInfrastructureDependencies(builder.Configuration);

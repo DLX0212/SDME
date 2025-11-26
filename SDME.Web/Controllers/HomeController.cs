@@ -29,7 +29,6 @@ namespace SDME.Web.Controllers
             try
             {
                 // Obtener categorías
-                // CORRECCIÓN 2: El método se llama ObtenerTodosAsync (no ObtenerTodasAsync)
                 var categoriasResult = await _categoriaService.ObtenerTodosAsync();
 
                 if (categoriasResult.Exito)

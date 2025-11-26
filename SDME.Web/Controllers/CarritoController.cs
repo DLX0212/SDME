@@ -16,7 +16,7 @@ namespace SDME.Web.Controllers
 
   
         public CarritoController(
-            IProductoService productoService,  // ← Interfaz
+            IProductoService productoService,
             ILogger<CarritoController> logger)
         {
             _productoService = productoService;
@@ -150,7 +150,6 @@ namespace SDME.Web.Controllers
             }
         }
 
-        /// <summary>
         /// POST: /Carrito/Eliminar:Elimina un producto del carrito
         [HttpPost]
         [ValidateAntiForgeryToken]
