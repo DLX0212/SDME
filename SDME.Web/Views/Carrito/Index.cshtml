@@ -1,0 +1,107 @@
+﻿@model SDME.Web.ViewModels.CarritoViewModel
+
+@{
+    ViewData["Title"] = "Carrito de Compras";
+}
+
+<div class="container py-5">
+    <h2 class="mb-4">@ViewData["Title"]</h2>
+
+    @if (!Model.Items.Any())
+    {
+        <div class="alert alert-info text-center">
+            <h4>Tu carrito está vacío</h4>
+            <p>Parece que aún no has agregado productos.</p>
+            <a asp-controller="Productos" asp-action="Index" class="btn btn-primary mt-3">
+                Ir a comprar
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        @foreach (var item in Model.Items)
+                        {
+                            <div class="row mb-3 align-items-center border-bottom pb-3">
+                                <div class="col-md-2">
+                                    @if (!string.IsNullOrEmpty(item.ImagenUrl))
+                                    {
+                                        <img src="@item.ImagenUrl" class="img-fluid rounded" alt="@item.Nombre">
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-light d-flex align-items-center justify-content-center text-muted rounded" style="height: 80px;">
+                                            <small>Sin img</small>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="col-md-4">
+                                    <h5 class="mb-1">@item.Nombre</h5>
+                                    <p class="text-muted small mb-0">Precio: $@item.PrecioUnitario.ToString("N2")</p>
+                                    @if (!string.IsNullOrEmpty(item.NotasEspeciales))
+                                    {
+                                        <small class="text-info">Nota: @item.NotasEspeciales</small>
+                                    }
+                                </div>
+
+                                <div class="col-md-3">
+                                    <form asp-action="Actualizar" method="post" class="d-flex align-items-center">
+                                        <input type="hidden" name="productoId" value="@item.ProductoId" />
+                                        <input type="number" name="cantidad" value="@item.Cantidad" min="1" max="@item.StockDisponible" class="form-control form-control-sm me-2" style="width: 70px;" onchange="this.form.submit()" />
+                                    </form>
+                                    <small class="text-muted">Stock: @item.StockDisponible</small>
+                                </div>
+
+                                <div class="col-md-3 text-end">
+                                    <p class="fw-bold mb-1">$@item.Subtotal.ToString("N2")</p>
+                                    <form asp-action="Eliminar" method="post">
+                                        <input type="hidden" name="productoId" value="@item.ProductoId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                
+                <form asp-action="Vaciar" method="post" class="text-end mb-3">
+                     <button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('¿Estás seguro de vaciar el carrito?');">Vaciar Carrito</button>
+                </form>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Resumen del Pedido</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal</span>
+                            <span>$@Model.Total.ToString("N2")</span>
+                        </div>
+                        <hr />
+                        <div class="d-flex justify-content-between mb-4">
+                            <strong>Total</strong>
+                            <strong class="text-primary fs-5">$@Model.Total.ToString("N2")</strong>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a asp-controller="Pedidos" asp-action="Checkout" class="btn btn-success btn-lg">
+                                Proceder al Pago
+                            </a>
+                            <a asp-controller="Productos" asp-action="Index" class="btn btn-outline-secondary">
+                                Seguir Comprando
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

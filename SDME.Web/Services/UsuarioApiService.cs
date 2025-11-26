@@ -5,68 +5,35 @@ using SDME.Web.Services.Interfaces;
 
 namespace SDME.Web.Services
 {
-
-    /// Servicio de usuarios que usa la abstracción IHttpClientService
-    public class UsuarioApiService : IUsuarioService
+    public class UsuarioApiService : BaseApiService<UsuarioDto>, IUsuarioService
     {
-        private readonly IHttpClientService _httpClient;
-        private readonly ILogger<UsuarioApiService> _logger;
-        private const string ENDPOINT = "Usuarios";
-
-        public UsuarioApiService(
-            IHttpClientService httpClient,
-            ILogger<UsuarioApiService> logger)
+        // Pasamos el IHttpClientService y el nombre del endpoint ("Usuarios") al padre
+        public UsuarioApiService(IHttpClientService httpClient)
+            : base(httpClient, "Usuarios")
         {
-            _httpClient = httpClient;
-            _logger = logger;
         }
 
-        // Métodos CRUD heredados de IApiService<UsuarioDto>
-        public async Task<ResponseDto<List<UsuarioDto>>> ObtenerTodosAsync()
-        {
-            return await _httpClient.GetListAsync<UsuarioDto>(ENDPOINT);
-        }
+        // Metodos específicos de UsuarioApiService
 
-        public async Task<ResponseDto<UsuarioDto>> ObtenerPorIdAsync(int id)
-        {
-            return await _httpClient.GetAsync<UsuarioDto>($"{ENDPOINT}/{id}");
-        }
-
-        public async Task<ResponseDto<UsuarioDto>> CrearAsync(object dto)
-        {
-            return await _httpClient.PostAsync<object, UsuarioDto>(ENDPOINT, dto);
-        }
-
-        public async Task<ResponseDto<UsuarioDto>> ActualizarAsync(int id, object dto)
-        {
-            return await _httpClient.PutAsync<object, UsuarioDto>($"{ENDPOINT}/{id}", dto);
-        }
-
-        public async Task<ResponseDto<bool>> EliminarAsync(int id)
-        {
-            return await _httpClient.DeleteAsync($"{ENDPOINT}/{id}");
-        }
-
-        // Métodos específicos de IUsuarioService
         public async Task<ResponseDto<UsuarioDto>> RegistrarAsync(RegistrarUsuarioDto dto)
         {
             return await _httpClient.PostAsync<RegistrarUsuarioDto, UsuarioDto>(
-                $"{ENDPOINT}/registrar",
+                $"{_endpoint}/registrar",
                 dto);
         }
 
         public async Task<ResponseDto<LoginResponseDto>> LoginAsync(LoginDto dto)
         {
             return await _httpClient.PostAsync<LoginDto, LoginResponseDto>(
-                $"{ENDPOINT}/login",
+                $"{_endpoint}/login",
                 dto);
         }
 
         public async Task<ResponseDto<bool>> ExisteEmailAsync(string email)
         {
             var encodedEmail = Uri.EscapeDataString(email);
-            return await _httpClient.GetPrimitiveAsync<bool>($"{ENDPOINT}/verificar-email/{encodedEmail}");
-
+            // Usamos _httpClient y _endpoint que vienen de la clase Base
+            return await _httpClient.GetPrimitiveAsync<bool>($"{_endpoint}/verificar-email/{encodedEmail}");
         }
     }
 }
