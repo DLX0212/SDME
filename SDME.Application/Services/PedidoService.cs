@@ -27,9 +27,9 @@ namespace SDME.Application.Services
             {
                 _logger.LogInformation($"Iniciando creación de pedido para usuario {dto.UsuarioId}");
 
-                // ===== VALIDACIONES DE NEGOCIO (Requisitos SRS/SAD) =====
+                // VALIDACIONES DE NEGOCIO
 
-                // 1. Validar que el usuario existe y está activo
+                //  Validar que el usuario existe y está activo
                 var usuario = await _unitOfWork.Usuarios.GetByIdAsync(dto.UsuarioId);
                 if (usuario == null)
                 {
@@ -42,19 +42,19 @@ namespace SDME.Application.Services
                     return ResponseDto<PedidoDto>.Failure("El usuario no está activo");
                 }
 
-                // 2. Validar que el pedido no esté vacío (SRS 3.3)
+                //  Validar que el pedido no esté vacío 
                 if (dto.Detalles == null || !dto.Detalles.Any())
                 {
                     return ResponseDto<PedidoDto>.Failure("El pedido debe contener al menos un producto");
                 }
 
-                // 3. Validar tipo de entrega válido
+                //  Validar tipo de entrega válido
                 if (dto.TipoEntrega != "Domicilio" && dto.TipoEntrega != "Recoger")
                 {
                     return ResponseDto<PedidoDto>.Failure("Tipo de entrega inválido. Use 'Domicilio' o 'Recoger'");
                 }
 
-                // 4. Si es domicilio, validar que tenga dirección
+                //  Si es domicilio, validar que tenga dirección
                 if (dto.TipoEntrega == "Domicilio" && !dto.DireccionEntregaId.HasValue)
                 {
                     return ResponseDto<PedidoDto>.Failure("Debe especificar una dirección para entrega a domicilio");
@@ -74,7 +74,7 @@ namespace SDME.Application.Services
                     CreadoPor = usuario.Email
                 };
 
-                // 5. Validar y agregar cada producto del pedido
+                //  Validar y agregar cada producto del pedido
                 foreach (var detalleDto in dto.Detalles)
                 {
                     var producto = await _unitOfWork.Productos.GetByIdAsync(detalleDto.ProductoId);
@@ -142,14 +142,14 @@ namespace SDME.Application.Services
                     await _unitOfWork.Productos.UpdateAsync(producto);
                 }
 
-                // 6. Calcular totales (incluye ITBIS 18% RD según SAD)
+                //  Calcular totales (incluye ITBIS 18%)
                 pedido.CalcularTotal();
 
-                // 7. Guardar el pedido
+                //  Guardar el pedido
                 await _unitOfWork.Pedidos.AddAsync(pedido);
                 await _unitOfWork.SaveChangesAsync();
 
-                // 8. Generar número de pedido único
+                //  Generar número de pedido único
                 pedido.GenerarNumeroPedido();
                 await _unitOfWork.Pedidos.UpdateAsync(pedido);
                 await _unitOfWork.SaveChangesAsync();

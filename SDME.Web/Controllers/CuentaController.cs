@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SDME.Application.DTOs.Usuario;
 using SDME.Web.Services;
+using SDME.Web.Services.Interfaces;
 
 namespace SDME.Web.Controllers
 {
@@ -9,14 +10,13 @@ namespace SDME.Web.Controllers
 
     public class CuentaController : Controller
     {
-        private readonly UsuarioApiService _usuarioApiService;
-        private readonly ILogger<CuentaController> _logger;
+        private readonly IUsuarioService _usuarioApiService;
 
+        private readonly ILogger<CuentaController> _logger;
         public CuentaController(
-            UsuarioApiService usuarioApiService,
-            ILogger<CuentaController> logger)
+        IUsuarioService usuarioService, ILogger<CuentaController> logger)
         {
-            _usuarioApiService = usuarioApiService;
+            _usuarioApiService = usuarioService;
             _logger = logger;
         }
 

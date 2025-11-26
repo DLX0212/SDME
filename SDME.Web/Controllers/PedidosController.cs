@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SDME.Application.DTOs.Pedido;
-using SDME.Application.Interfaces;
 using SDME.Web.ViewModels;
 using System.Text.Json;
+using SDME.Web.Services.Interfaces;
 
 namespace SDME.Web.Controllers
 {
@@ -10,12 +10,13 @@ namespace SDME.Web.Controllers
 
     public class PedidosController : Controller
     {
+
         private readonly IPedidoService _pedidoService;
         private readonly ILogger<PedidosController> _logger;
         private const string CARRITO_SESSION_KEY = "CarritoCompras";
 
         public PedidosController(
-            IPedidoService pedidoService,
+            IPedidoService pedidoService,  // ← Interfaz
             ILogger<PedidosController> logger)
         {
             _pedidoService = pedidoService;

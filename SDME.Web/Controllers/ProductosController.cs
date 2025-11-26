@@ -1,81 +1,71 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SDME.Web.Services;
+using SDME.Web.Services.Interfaces;
 using SDME.Web.ViewModels;
 
 namespace SDME.Web.Controllers
 {
-    /// Controlador para visualizar el menú de productos  ( Ahora consume la API REST en lugar de servicios directos)
     public class ProductosController : Controller
     {
-        private readonly ProductoApiService _productoApiService;
-        private readonly CategoriaApiService _categoriaApiService;
+
+        private readonly IProductoService _productoService;
+        private readonly ICategoriaService _categoriaService;
         private readonly ILogger<ProductosController> _logger;
 
         public ProductosController(
-            ProductoApiService productoApiService,
-            CategoriaApiService categoriaApiService,
+            IProductoService productoService,
+            ICategoriaService categoriaService,
             ILogger<ProductosController> logger)
         {
-            _productoApiService = productoApiService;
-            _categoriaApiService = categoriaApiService;
+            _productoService = productoService;
+            _categoriaService = categoriaService;
             _logger = logger;
         }
 
         /// GET: /Productos: Muestra el menú completo con todas las categorías
-     
+
         [HttpGet]
         public async Task<IActionResult> Index(int? categoriaId, string? busqueda)
         {
             try
             {
-                // Obtener categorías desde la API
-                var categoriasResult = await _categoriaApiService.ObtenerTodasAsync();
+   
+                var categoriasResult = await _categoriaService.ObtenerTodosAsync();
 
                 var viewModel = new MenuViewModel
                 {
+ 
                     Categorias = categoriasResult.Exito ? categoriasResult.Data ?? new() : new(),
                     CategoriaSeleccionadaId = categoriaId,
                     TerminoBusqueda = busqueda
                 };
 
-                // Filtrar productos según parámetros
+                // Filtrar productos
                 if (!string.IsNullOrWhiteSpace(busqueda))
                 {
-                    // Buscar productos por término
-                    var resultadoBusqueda = await _productoApiService.BuscarAsync(busqueda);
+
+                    var resultadoBusqueda = await _productoService.BuscarAsync(busqueda);
                     viewModel.Productos = resultadoBusqueda.Exito ? resultadoBusqueda.Data ?? new() : new();
                     viewModel.TituloSeccion = $"Resultados para '{busqueda}'";
 
-                    if (!resultadoBusqueda.Exito)
-                    {
-                        TempData["Warning"] = resultadoBusqueda.Mensaje;
-                    }
+                    if (!resultadoBusqueda.Exito) TempData["Warning"] = resultadoBusqueda.Mensaje;
                 }
                 else if (categoriaId.HasValue)
                 {
-                    // Obtener productos por categoría
-                    var resultadoCategoria = await _productoApiService.ObtenerPorCategoriaAsync(categoriaId.Value);
+                    var resultadoCategoria = await _productoService.ObtenerPorCategoriaAsync(categoriaId.Value);
                     viewModel.Productos = resultadoCategoria.Exito ? resultadoCategoria.Data ?? new() : new();
 
                     var categoriaNombre = viewModel.Categorias
                         .FirstOrDefault(c => c.Id == categoriaId.Value)?.Nombre ?? "Categoría";
                     viewModel.TituloSeccion = categoriaNombre;
 
-                    if (!resultadoCategoria.Exito)
-                    {
-                        TempData["Warning"] = resultadoCategoria.Mensaje;
-                    }
+                    if (!resultadoCategoria.Exito) TempData["Warning"] = resultadoCategoria.Mensaje;
                 }
                 else
                 {
-                    // Obtener todos los productos disponibles
-                    var todosProductos = await _productoApiService.ObtenerDisponiblesAsync();
+                    var todosProductos = await _productoService.ObtenerDisponiblesAsync();
                     viewModel.Productos = todosProductos.Exito ? todosProductos.Data ?? new() : new();
 
-                    if (!todosProductos.Exito)
-                    {
-                        TempData["Warning"] = todosProductos.Mensaje;
-                    }
+                    if (!todosProductos.Exito) TempData["Warning"] = todosProductos.Mensaje;
                 }
 
                 return View(viewModel);
@@ -83,7 +73,7 @@ namespace SDME.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al cargar el menú");
-                TempData["Error"] = "No se pudo cargar el menú. Por favor, intenta nuevamente.";
+                TempData["Error"] = "No se pudo cargar el menú.";
                 return RedirectToAction("Index", "Home");
             }
         }
@@ -95,7 +85,7 @@ namespace SDME.Web.Controllers
         {
             try
             {
-                var resultado = await _productoApiService.ObtenerPorIdAsync(id);
+                var resultado = await _productoService.ObtenerPorIdAsync(id);
 
                 if (!resultado.Exito || resultado.Data == null)
                 {

@@ -7,7 +7,7 @@ namespace SDME.Web.ViewModels
     {
         public List<ItemCarritoViewModel> Items { get; set; } = new();
         public decimal Subtotal => Items.Sum(i => i.Subtotal);
-        public decimal Impuesto => Subtotal * 0.18m; // ITBIS 18%
+        public decimal Impuesto => Subtotal * 0.18m;
         public decimal Total => Subtotal + Impuesto;
         public int CantidadTotal => Items.Sum(i => i.Cantidad);
         public bool TieneItems => Items.Any();

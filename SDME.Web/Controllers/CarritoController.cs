@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SDME.Application.Interfaces;
 using SDME.Web.ViewModels;
 using System.Text.Json;
+using SDME.Web.Services.Interfaces;
 
 namespace SDME.Web.Controllers
 {
@@ -9,12 +9,14 @@ namespace SDME.Web.Controllers
     /// Usa sesiones para almacenar el carrito temporalmente
     public class CarritoController : Controller
     {
+
         private readonly IProductoService _productoService;
         private readonly ILogger<CarritoController> _logger;
         private const string CARRITO_SESSION_KEY = "CarritoCompras";
 
+  
         public CarritoController(
-            IProductoService productoService,
+            IProductoService productoService,  // ← Interfaz
             ILogger<CarritoController> logger)
         {
             _productoService = productoService;

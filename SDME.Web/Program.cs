@@ -1,10 +1,11 @@
 using SDME.Infraestructure.Dependencies;
+using SDME.Web.Services;
+using SDME.Web.Services.Base;
+using SDME.Web.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== SERVICIOS =====
-
-//  MVC
+// MVC
 builder.Services.AddControllersWithViews();
 
 // Sesiones (para el carrito)
@@ -15,7 +16,7 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-//  Configurar HttpClient para la API
+// Config HttpClient para consumir la API REST
 builder.Services.AddHttpClient("SDMEAPI", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5113/api/");
@@ -23,13 +24,14 @@ builder.Services.AddHttpClient("SDMEAPI", client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// REGISTRAR SERVICIOS DE API 
-builder.Services.AddScoped<SDME.Web.Services.ProductoApiService>();
-builder.Services.AddScoped<SDME.Web.Services.CategoriaApiService>();
-builder.Services.AddScoped<SDME.Web.Services.PedidoApiService>();
-builder.Services.AddScoped<SDME.Web.Services.UsuarioApiService>();
+//REFACTORY (Scoped por singleton)
+builder.Services.AddSingleton<IHttpClientService, HttpClientService>();
+builder.Services.AddSingleton<IProductoService, ProductoApiService>();
+builder.Services.AddSingleton<ICategoriaService, CategoriaApiService>();
+builder.Services.AddSingleton<IPedidoService, PedidoApiService>();
+builder.Services.AddSingleton<IUsuarioService, UsuarioApiService>();
 
-//  Dependencias de infraestructura 
+// Dependencias
 builder.Services.AddInfrastructureDependencies(builder.Configuration);
 builder.Services.AddCategoriaDependencies();
 builder.Services.AddProductoDependencies();
@@ -39,8 +41,6 @@ builder.Services.AddPromocionDependencies();
 
 var app = builder.Build();
 
-
-
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -49,8 +49,6 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
-
-// Habilitar sesiones
 app.UseSession();
 
 app.MapControllerRoute(
